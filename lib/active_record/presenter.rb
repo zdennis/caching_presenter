@@ -30,22 +30,23 @@ module ActiveRecord
     def self.method_added(name)
       cache_method(name)
     end
-    
+
     def self.cache_method(name)
       name = name.to_s
-      return if name =~ /((with|without)_caching|initialize)$/
+      return if name =~ /((with|without)_caching[\?!]?|initialize)$/
       return if @@cached_instance_methods.include?(name)
       @@cached_instance_methods[name]
+      aliased_target, punctuation = name.sub(/([?!])$/, ''), $1
       result = nil
-      define_method("#{name}_with_caching") do |*args|
-        result = send("#{name}_without_caching", *args)
+      define_method("#{aliased_target}_with_caching#{punctuation}") do |*args|
+        result = send("#{aliased_target}_without_caching#{punctuation}", *args)
         @@cached_instance_methods[name][args] = result
         (class << self ; self ; end).instance_eval do
           define_method(name){ |*myargs| 
             if @@cached_instance_methods[name].has_key?(myargs) 
               @@cached_instance_methods[name][myargs]
             else
-              result = send("#{name}_without_caching", *myargs)
+              result = send("#{aliased_target}_without_caching#{punctuation}", *myargs)
               @@cached_instance_methods[name][myargs] = result
               result
             end

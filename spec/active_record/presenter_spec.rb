@@ -4,6 +4,16 @@ class SingleObjectPresenter < ActiveRecord::Presenter
   presents_on :foo
 
   delegate :raise_your_hand, :to => :@foo
+
+  def stop!
+    @foo.stop
+  end
+
+  def last_day?
+    @foo.last_day
+  end
+
+
   
   def talk
     @foo.speak
@@ -85,6 +95,22 @@ describe ActiveRecord::Presenter do
     presenter = SingleObjectPresenter.new(:foo => foo)
     presenter.raise_your_hand(1, 2, 3).should == "raising my hand"
     presenter.raise_your_hand(1, 2, 3).should == "raising my hand"    
+  end
+
+  it "works with methods suffixed with a question mark" do
+    foo = mock("foo")
+    foo.should_receive(:last_day).with().at_most(1).times.and_return true
+    presenter = SingleObjectPresenter.new(:foo => foo)
+    presenter.last_day?.should == true
+    presenter.last_day?.should == true  
+  end
+
+  it "works with methods suffixed with an exclamation point" do
+    foo = mock("foo")
+    foo.should_receive(:stop).with().at_most(1).times.and_return "stopped"
+    presenter = SingleObjectPresenter.new(:foo => foo)
+    presenter.stop!.should == "stopped"
+    presenter.stop!.should == "stopped"  
   end
 
 end
