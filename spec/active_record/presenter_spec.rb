@@ -113,5 +113,18 @@ describe ActiveRecord::Presenter do
     presenter.stop!.should == "stopped"  
   end
 
+  it "it delegates methods automatically to the object being presented on" do
+    foo = mock("foo")
+    foo.should_receive(:amount).and_return 10
+    presenter = SingleObjectPresenter.new(:foo => foo)
+    presenter.amount.should == 10
+  end
+  
+  it "raises method missing errors when the object being presented on doesn't respond to an unknown method" do
+    foo = mock("foo")
+    presenter = SingleObjectPresenter.new(:foo => foo)
+    lambda { presenter.amount }.should raise_error(NoMethodError)
+  end
+
 end
 

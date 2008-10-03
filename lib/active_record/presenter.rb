@@ -23,6 +23,14 @@ module ActiveRecord
       define_method(:presenting_on) do
         self.instance_variable_get "@#{options[:presenting_on]}"
       end
+      
+      define_method(:method_missing) do |name, *args|
+        if presenting_on.respond_to?(name)
+          presenting_on.send(name, *args)
+        else
+          super
+        end
+      end
     end
 
     @@cached_instance_methods = Hash.new{ |h,k| h[k] = {}}
@@ -56,5 +64,6 @@ module ActiveRecord
       end
       alias_method_chain name, :caching
     end
+    
   end
 end
