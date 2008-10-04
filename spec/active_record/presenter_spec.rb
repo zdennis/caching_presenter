@@ -48,6 +48,13 @@ end
 
 
 describe ActiveRecord::Presenter do
+  it "it automatically delegates methods that exist on the object being presented" do
+    foo = mock("foo")
+    foo.should_receive(:amount).and_return 10
+    presenter = SingleObjectPresenter.new(:foo => foo)
+    presenter.amount.should == 10
+  end
+  
   %w(id class errors new_record? to_param).each do |field|
     it "delegates #{field} to the object being presented on" do
       foo = mock("foo")
@@ -95,7 +102,7 @@ describe ActiveRecord::Presenter do
     presenter.run(:near).should == "Running nearby!"
   end
   
-  it "caches delegated methods" do
+  it "caches explicitly delegated methods" do
     foo = mock("foo")
     foo.should_receive(:raise_your_hand).with().at_most(1).times.and_return "raising my hand"
     presenter = SingleObjectPresenter.new(:foo => foo)
@@ -103,12 +110,20 @@ describe ActiveRecord::Presenter do
     presenter.raise_your_hand.should == "raising my hand"    
   end
 
-  it "caches delegated methods with arguments" do
+  it "caches explicitly delegated methods with arguments" do
     foo = mock("foo")
     foo.should_receive(:raise_your_hand).with(1, 2, 3).at_most(1).times.and_return "raising my hand"
     presenter = SingleObjectPresenter.new(:foo => foo)
     presenter.raise_your_hand(1, 2, 3).should == "raising my hand"
     presenter.raise_your_hand(1, 2, 3).should == "raising my hand"    
+  end
+  
+  it "caches implicitly delegated methods" do
+    foo = mock("foo")
+    foo.should_receive(:turkey).at_most(1).times
+    presenter = SingleObjectPresenter.new :foo => foo
+    presenter.turkey
+    presenter.turkey
   end
 
   it "works with methods suffixed with a question mark" do
@@ -127,15 +142,8 @@ describe ActiveRecord::Presenter do
     presenter.stop!.should == "stopped"  
   end
 
-  it "it delegates methods automatically to the object being presented on" do
-    foo = mock("foo")
-    foo.should_receive(:amount).and_return 10
-    presenter = SingleObjectPresenter.new(:foo => foo)
-    presenter.amount.should == 10
-  end
-  
   it "raises method missing errors when the object being presented on doesn't respond to an unknown method" do
-    foo = mock("foo")
+    foo = Object.new
     presenter = SingleObjectPresenter.new(:foo => foo)
     lambda { presenter.amount }.should raise_error(NoMethodError)
   end
@@ -151,4 +159,3 @@ describe ActiveRecord::Presenter do
     bar2_presenter.say("bananas").should == "mango"
   end
 end
-

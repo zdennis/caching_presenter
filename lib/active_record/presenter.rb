@@ -46,7 +46,8 @@ module ActiveRecord
       def write_constructor(options)
         constructor_options = options[:options]
         constructor_options[:requiring] ||= []
-      
+        klass = self
+        
         define_method(:initialize) do |args|
           args = args.dup
           required_arguments = constructor_options[:requiring] + [options[:presenting_on]]
@@ -60,10 +61,14 @@ module ActiveRecord
         define_method(:presenting_on) do
           self.instance_variable_get "@#{options[:presenting_on]}"
         end
-      
+
         define_method(:method_missing) do |name, *args|
           if presenting_on.respond_to?(name)
-            presenting_on.send(name, *args)
+            klass.instance_eval do
+              define_method(name) { |*myargs| presenting_on.send(name, *myargs) }
+            end
+            klass.cache_method name
+            send(name, *args)
           else
             super
           end
