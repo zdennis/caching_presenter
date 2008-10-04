@@ -36,7 +36,7 @@ module ActiveRecord
     end
     
     class << self
-      def presents_on(model_sym, options={})
+      def presents(model_sym, options={})
         @cached_instance_methods = Hash.new{ |h,k| h[k] = {}}
         write_constructor :presenting_on => model_sym, :options => options
       end

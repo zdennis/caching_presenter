@@ -1,7 +1,7 @@
 require File.expand_path(File.dirname(__FILE__) + "/../spec_helper")
 
 class SingleObjectPresenter < ActiveRecord::Presenter
-  presents_on :foo
+  presents :foo
 
   delegate :raise_your_hand, :to => :@foo
 
@@ -23,7 +23,7 @@ class SingleObjectPresenter < ActiveRecord::Presenter
 end
 
 class SingleObjectWithConstructorRequirementsPresenter < ActiveRecord::Presenter
-  presents_on :foo, :requiring => [:bar, :baz]
+  presents :foo, :requiring => [:bar, :baz]
 
   def sum
     @bar.amount + @baz.amount
@@ -31,7 +31,7 @@ class SingleObjectWithConstructorRequirementsPresenter < ActiveRecord::Presenter
 end
 
 class FirstBarPresenter < ActiveRecord::Presenter
-  presents_on :bar
+  presents :bar
 
   def say(what) 
     @bar.say(what)
@@ -39,7 +39,7 @@ class FirstBarPresenter < ActiveRecord::Presenter
 end
 
 class SecondBarPresenter < ActiveRecord::Presenter
-  presents_on :bar
+  presents :bar
 
   def say(what) 
     @bar.say(what)
