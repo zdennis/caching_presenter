@@ -1,6 +1,6 @@
-require File.expand_path(File.dirname(__FILE__) + "/../spec_helper")
+require File.expand_path(File.dirname(__FILE__) + "/spec_helper")
 
-class SingleObjectPresenter < ActiveRecord::Presenter
+class SingleObjectPresenter < CachingPresenter
   presents :foo
 
   delegate :raise_your_hand, :to => :@foo
@@ -22,7 +22,7 @@ class SingleObjectPresenter < ActiveRecord::Presenter
   end
 end
 
-class SingleObjectWithConstructorRequirementsPresenter < ActiveRecord::Presenter
+class SingleObjectWithConstructorRequirementsPresenter < CachingPresenter
   presents :foo, :requiring => [:bar, :baz]
 
   def sum
@@ -30,7 +30,7 @@ class SingleObjectWithConstructorRequirementsPresenter < ActiveRecord::Presenter
   end
 end
 
-class FirstBarPresenter < ActiveRecord::Presenter
+class FirstBarPresenter < CachingPresenter
   presents :bar
 
   def say(what) 
@@ -38,7 +38,7 @@ class FirstBarPresenter < ActiveRecord::Presenter
   end
 end
 
-class SecondBarPresenter < ActiveRecord::Presenter
+class SecondBarPresenter < CachingPresenter
   presents :bar
 
   def say(what) 
@@ -47,20 +47,12 @@ class SecondBarPresenter < ActiveRecord::Presenter
 end
 
 
-describe ActiveRecord::Presenter do
+describe CachingPresenter do
   it "it automatically delegates methods that exist on the object being presented" do
     foo = mock("foo")
     foo.should_receive(:amount).and_return 10
     presenter = SingleObjectPresenter.new(:foo => foo)
     presenter.amount.should == 10
-  end
-  
-  %w(id class errors new_record? to_param).each do |field|
-    it "delegates #{field} to the object being presented on" do
-      foo = mock("foo")
-      foo.should_receive(field).and_return "value for #{field}"
-      SingleObjectPresenter.new(:foo => foo).send(field).should == "value for #{field}"
-    end
   end
   
   it "can present on an object with additional constructor requirements" do
