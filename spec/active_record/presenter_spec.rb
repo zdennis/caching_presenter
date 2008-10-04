@@ -12,8 +12,6 @@ class SingleObjectPresenter < ActiveRecord::Presenter
   def last_day?
     @foo.last_day
   end
-
-
   
   def talk
     @foo.speak
@@ -26,9 +24,25 @@ end
 
 class SingleObjectWithConstructorRequirementsPresenter < ActiveRecord::Presenter
   presents_on :foo, :requiring => [:bar, :baz]
-  
+
   def sum
     @bar.amount + @baz.amount
+  end
+end
+
+class FirstBarPresenter < ActiveRecord::Presenter
+  presents_on :bar
+
+  def say(what) 
+    @bar.say(what)
+  end
+end
+
+class SecondBarPresenter < ActiveRecord::Presenter
+  presents_on :bar
+
+  def say(what) 
+    @bar.say(what)
   end
 end
 
@@ -125,6 +139,16 @@ describe ActiveRecord::Presenter do
     presenter = SingleObjectPresenter.new(:foo => foo)
     lambda { presenter.amount }.should raise_error(NoMethodError)
   end
-
+  
+  it "can present on two methods with the same name on different presenters" do
+    bar1 = mock("bar1")
+    bar2 = mock("bar2")
+    bar1_presenter = FirstBarPresenter.new(:bar => bar1)
+    bar2_presenter = SecondBarPresenter.new(:bar => bar2)
+    bar1.should_receive(:say).with("apples").and_return "oranges"
+    bar2.should_receive(:say).with("bananas").and_return "mango"
+    bar1_presenter.say("apples").should == "oranges"
+    bar2_presenter.say("bananas").should == "mango"
+  end
 end
 
