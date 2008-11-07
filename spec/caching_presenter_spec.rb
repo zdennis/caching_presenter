@@ -98,12 +98,28 @@ describe CachingPresenter do
     presenter.run(:near).should == "Running nearby!"
   end
   
+  it "doesn't cache method calls with blocks" do
+    foo = mock("foo")
+    foo.should_receive(:speak).with().exactly(2).times().and_return "Speaking!"
+    presenter = SingleObjectPresenter.new(:foo => foo)
+    presenter.talk { |o| o.speak }.should == "Speaking!"
+    presenter.talk { |o| o.speak }.should == "Speaking!"
+  end
+    
   it "caches explicitly delegated methods" do
     foo = mock("foo")
     foo.should_receive(:raise_your_hand).with().at_most(1).times.and_return "raising my hand"
     presenter = SingleObjectPresenter.new(:foo => foo)
     presenter.raise_your_hand.should == "raising my hand"
     presenter.raise_your_hand.should == "raising my hand"    
+  end
+
+  it "doesn't cache explicitly delegated methods with blocks" do
+    foo = mock("foo")
+    foo.should_receive(:raise_your_hand).with().exactly(2).times.and_return "raising my hand"
+    presenter = SingleObjectPresenter.new(:foo => foo)
+    presenter.raise_your_hand { }.should == "raising my hand"
+    presenter.raise_your_hand { }.should == "raising my hand"
   end
 
   it "caches explicitly delegated methods with arguments" do
@@ -122,12 +138,12 @@ describe CachingPresenter do
     presenter.turkey
   end
 
-  it "doesn't cache method calls with blocks" do
+  it "doesn't cache implicitly delegated methods with blocks" do
     foo = mock("foo")
-    foo.should_receive(:speak).with().exactly(2).times().and_return "Speaking!"
-    presenter = SingleObjectPresenter.new(:foo => foo)
-    presenter.talk { |o| o.speak }.should == "Speaking!"
-    presenter.talk { |o| o.speak }.should == "Speaking!"
+    foo.should_receive(:turkey).exactly(2).times
+    presenter = SingleObjectPresenter.new :foo => foo
+    presenter.turkey { }
+    presenter.turkey { }
   end
 
   it "works with methods suffixed with a question mark" do
