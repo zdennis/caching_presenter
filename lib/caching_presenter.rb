@@ -1,6 +1,4 @@
 class CachingPresenter
-  delegate :id, :class, :errors, :new_record?, :to_param, :to => :presenting_on
-
   def self.inherited(subclass)
     subclass.extend CacheMethods
   end
@@ -8,29 +6,30 @@ class CachingPresenter
   module CacheMethods
     def self.extended(klass)
       cached_methods = []
-      metaclass = (class <<klass; self; end)
-      metaclass.class_eval do
-        define_method(:cache_method) do |method_name|
-          method_name = method_name.to_s
-          return if method_name =~ /^(initialize|method_missing)$/
-          return if cached_methods.include?(method_name)
-          cached_methods << method_name
-          memoize(method_name)
-        end
-      end
+      klass.instance_variable_set :@cached_methods, []
+    end
+
+    def cache_method(method_name)
+      return if @cached_methods.include?(method_name) || method_name.to_s =~ /^(initialize|method_missing|presenting_on)$/
+      original_method = :"_unmemoized_#{method_name}"
+      @cached_methods << method_name << original_method
+      alias_method original_method, method_name
+      memoize_without_block method_name, original_method
     end
     
-    def memoize(method_name)
-      unbound_method = instance_method(method_name)
-      define_method method_name do |*args|
-        cache = {}
-        bound_method = unbound_method.bind(self)
-        mc = class <<self ; self; end
-        mc.send :define_method, method_name do |*myargs|
-          cache.has_key?(myargs) ? cache[myargs] : cache[myargs] = bound_method.call(*myargs)
+    def memoize_without_block(method_name, original_method_name)
+      class_eval <<-EOS, __FILE__, __LINE__
+        def #{method_name}(*args, &blk)
+          @_memoized_cache ||= {}
+          if block_given?
+            #{original_method_name}(*args)
+          elsif @_memoized_cache.has_key?(args)
+            @_memoized_cache[args]
+          else
+            @_memoized_cache[args] = #{original_method_name}(*args)
+          end
         end
-        send(method_name, *args)
-      end
+      EOS
     end
   end
   
@@ -66,7 +65,6 @@ class CachingPresenter
           klass.instance_eval do
             define_method(name) { |*myargs| presenting_on.send(name, *myargs) }
           end
-          klass.cache_method name
           send(name, *args)
         else
           super

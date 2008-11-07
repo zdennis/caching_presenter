@@ -13,8 +13,12 @@ class SingleObjectPresenter < CachingPresenter
     @foo.last_day
   end
   
-  def talk
-    @foo.speak
+  def talk(&blk)
+    if block_given?
+      yield @foo
+    else
+      @foo.speak
+    end
   end
   
   def run(*args)
@@ -118,6 +122,14 @@ describe CachingPresenter do
     presenter.turkey
   end
 
+  it "doesn't cache method calls with blocks" do
+    foo = mock("foo")
+    foo.should_receive(:speak).with().exactly(2).times().and_return "Speaking!"
+    presenter = SingleObjectPresenter.new(:foo => foo)
+    presenter.talk { |o| o.speak }.should == "Speaking!"
+    presenter.talk { |o| o.speak }.should == "Speaking!"
+  end
+
   it "works with methods suffixed with a question mark" do
     foo = mock("foo")
     foo.should_receive(:last_day).with().at_most(1).times.and_return true
@@ -133,7 +145,7 @@ describe CachingPresenter do
     presenter.stop!.should == "stopped"
     presenter.stop!.should == "stopped"  
   end
-
+  
   it "raises method missing errors when the object being presented on doesn't respond to an unknown method" do
     foo = Object.new
     presenter = SingleObjectPresenter.new(:foo => foo)
