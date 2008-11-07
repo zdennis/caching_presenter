@@ -50,6 +50,9 @@ class SecondBarPresenter < CachingPresenter
   end
 end
 
+class ArrayPresenter < CachingPresenter
+  presents :arr
+end
 
 describe CachingPresenter do
   it "it automatically delegates methods that exist on the object being presented" do
@@ -105,6 +108,13 @@ describe CachingPresenter do
     presenter.talk { |o| o.speak }.should == "Speaking!"
     presenter.talk { |o| o.speak }.should == "Speaking!"
   end
+  
+  it "doesn't break method calls with blocks" do
+    arr = [1,2,3]
+    presenter = ArrayPresenter.new :arr => arr
+    presenter.map{ |i| i**2 }.should == [1,4,9]
+    presenter.map{ |i| i**3 }.should == [1,8,27]
+  end
     
   it "caches explicitly delegated methods" do
     foo = mock("foo")
@@ -145,7 +155,7 @@ describe CachingPresenter do
     presenter.turkey { }
     presenter.turkey { }
   end
-
+  
   it "works with methods suffixed with a question mark" do
     foo = mock("foo")
     foo.should_receive(:last_day).with().at_most(1).times.and_return true

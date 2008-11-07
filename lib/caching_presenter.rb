@@ -22,7 +22,7 @@ class CachingPresenter
         def #{method_name}(*args, &blk)
           @_memoized_cache ||= {}
           if block_given?
-            #{original_method_name}(*args)
+            #{original_method_name}(*args, &blk)
           elsif @_memoized_cache.has_key?(args)
             @_memoized_cache[args]
           else
@@ -60,16 +60,20 @@ class CachingPresenter
         self.instance_variable_get "@#{options[:presenting_on]}"
       end
 
-      define_method(:method_missing) do |name, *args|
-        if presenting_on.respond_to?(name)
-          klass.instance_eval do
-            define_method(name) { |*myargs| presenting_on.send(name, *myargs) }
+      class_eval <<-EOS, __FILE__, __LINE__
+        def method_missing(name, *args, &blk)
+          if presenting_on.respond_to?(name)
+            self.class.class_eval <<-END_INNER_CODE
+              def \#{name}(*myargs, &myblk)
+                presenting_on.\#{name}(*myargs, &myblk)
+              end
+            END_INNER_CODE
+            send(name, *args, &blk)
+          else
+            super
           end
-          send(name, *args)
-        else
-          super
         end
-      end
+      EOS
     end
     
     def method_added(method_name)
