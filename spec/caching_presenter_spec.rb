@@ -101,6 +101,17 @@ describe CachingPresenter do
     presenter.run(:near).should == "Running nearby!"
   end
   
+  it "returns results from different method calls with the same arguments" do
+    foo = mock("foo")
+    foo.should_receive(:walk).with(:far).at_most(1).times.and_return "Walking far!"
+    foo.should_receive(:run).with(:far).at_most(1).times.and_return "Running far!"
+    presenter = SingleObjectPresenter.new(:foo => foo)
+    presenter.walk(:far).should == "Walking far!"
+    presenter.walk(:far).should == "Walking far!"
+    presenter.run(:far).should == "Running far!"
+    presenter.run(:far).should == "Running far!"
+  end
+  
   it "doesn't cache method calls with blocks" do
     foo = mock("foo")
     foo.should_receive(:speak).with().exactly(2).times().and_return "Speaking!"

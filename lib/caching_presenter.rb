@@ -1,38 +1,10 @@
+require 'caching_presenter/memoizable'
+
 class CachingPresenter
   def self.inherited(subclass)
-    subclass.extend CacheMethods
+    subclass.extend Memoizable
   end
-  
-  module CacheMethods
-    def self.extended(klass)
-      cached_methods = []
-      klass.instance_variable_set :@cached_methods, []
-    end
-
-    def cache_method(method_name)
-      return if @cached_methods.include?(method_name) || method_name.to_s =~ /^(initialize|method_missing|presenting_on)$/
-      original_method = :"_unmemoized_#{method_name}"
-      @cached_methods << method_name << original_method
-      alias_method original_method, method_name
-      memoize_without_block method_name, original_method
-    end
     
-    def memoize_without_block(method_name, original_method_name)
-      class_eval <<-EOS, __FILE__, __LINE__
-        def #{method_name}(*args, &blk)
-          @_memoized_cache ||= {}
-          if block_given?
-            #{original_method_name}(*args, &blk)
-          elsif @_memoized_cache.has_key?(args)
-            @_memoized_cache[args]
-          else
-            @_memoized_cache[args] = #{original_method_name}(*args)
-          end
-        end
-      EOS
-    end
-  end
-  
   class << self
     def presents(model_sym, options={})
       @cached_instance_methods = Hash.new{ |h,k| h[k] = {}}
@@ -77,7 +49,7 @@ class CachingPresenter
     end
     
     def method_added(method_name)
-      cache_method(method_name)
+      memoize method_name
     end
   end
 end
