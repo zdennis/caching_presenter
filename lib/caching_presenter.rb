@@ -5,7 +5,13 @@ class CachingPresenter
   include InstantiationMethods
 
   alias :presenter_class :class
-  undef :class
+  %w(class id to_param).each do |method|
+    undef_method method if respond_to?(method)
+  end
+  
+  def respond_to?(*args)
+    super || presents.respond_to?(*args)
+  end
   
   def self.inherited(subclass)
     write_presents_for_subclass subclass

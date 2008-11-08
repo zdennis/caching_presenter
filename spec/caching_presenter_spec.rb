@@ -1,5 +1,4 @@
 require File.expand_path(File.dirname(__FILE__) + "/spec_helper")
-require 'ruby-debug'
 
 class SingleObject
 end
@@ -74,6 +73,20 @@ describe CachingPresenter do
   it "knows what it is presenting on" do
     SingleObjectPresenter.presents.should == :foo
     SubclassedPresenter.presents.should == :foo
+  end
+
+  %w(class id to_param).each do |method|
+    it "should always delegate #{method} to the source of the presenter" do
+      foo = stub("foo", method => "Result")
+      presenter = SingleObjectPresenter.new(:foo => foo)
+      eval("presenter.#{method}").should == "Result"
+    end
+  end
+  
+  it "delegates respond_to? to the object being presented when the presenter can't answer it" do
+    foo = stub("foo", :something_crazy => "yes")
+    presenter = SingleObjectPresenter.new(:foo => foo)
+    presenter.should respond_to(:something_crazy)
   end
   
   it "it automatically delegates methods that exist on the object being presented" do
