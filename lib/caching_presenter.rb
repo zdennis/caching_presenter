@@ -1,8 +1,11 @@
-require 'caching_presenter/memoizable'
-require 'caching_presenter/instantiation_methods'
-
 class CachingPresenter
+  require 'caching_presenter/memoizable'
+  require 'caching_presenter/instantiation_methods'
+
   include InstantiationMethods
+
+  alias :presenter_class :class
+  undef :class
   
   def self.inherited(subclass)
     write_presents_for_subclass subclass
@@ -26,12 +29,11 @@ class CachingPresenter
     def write_presents_for_subclass(subclass)
       subclass.instance_variable_set :@presents, presents
     end
-  
+
     def write_constructor(options)
       constructor_options = options[:options]
       constructor_options[:requiring] ||= []
       klass = self
-      
       define_method(:initialize) do |args|
         args = args.dup
         required_arguments = constructor_options[:requiring] + [options[:presents]]
@@ -48,10 +50,11 @@ class CachingPresenter
 
       class_eval <<-EOS, __FILE__, __LINE__
         def method_missing(name, *args, &blk)
-          if presents.respond_to?(name)
-            self.class.class_eval <<-END_INNER_CODE
+          source = instance_variable_get("@#{presents}")
+          if source.respond_to?(name)
+            presenter_class.class_eval <<-END_INNER_CODE
               def \#{name}(*myargs, &myblk)
-                presents.\#{name}(*myargs, &myblk)
+                instance_variable_get("@#{presents}").\#{name}(*myargs, &myblk)
               end
             END_INNER_CODE
             send(name, *args, &blk)

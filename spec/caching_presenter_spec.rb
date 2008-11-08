@@ -1,12 +1,15 @@
 require File.expand_path(File.dirname(__FILE__) + "/spec_helper")
+require 'ruby-debug'
 
 class SingleObject
 end
 
 class SingleObjectPresenter < CachingPresenter
+  extend Forwardable
+  
   presents :foo
 
-  delegate :raise_your_hand, :to => :@foo
+  def_delegator :@foo, :raise_your_hand
 
   def stop!
     @foo.stop
@@ -238,7 +241,7 @@ describe CachingPresenter, "creating presenters using Presenter()" do
   it "can create presenters within presenters" do
     arr = [SingleObject.new, SingleObject.new]
     presenter = ArrayPresenter.new :arr => arr
-    presenter.list.map{|i| i.class }.should == [SingleObjectPresenter, SingleObjectPresenter]
+    presenter.list.map{|i| i.presenter_class }.should == [SingleObjectPresenter, SingleObjectPresenter]
   end
 end
 
