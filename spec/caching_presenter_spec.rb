@@ -1,5 +1,8 @@
 require File.expand_path(File.dirname(__FILE__) + "/spec_helper")
 
+class SingleObject
+end
+
 class SingleObjectPresenter < CachingPresenter
   presents :foo
 
@@ -34,6 +37,9 @@ class SingleObjectWithConstructorRequirementsPresenter < CachingPresenter
   end
 end
 
+class FirstBar
+end
+
 class FirstBarPresenter < CachingPresenter
   presents :bar
 
@@ -52,9 +58,21 @@ end
 
 class ArrayPresenter < CachingPresenter
   presents :arr
+  
+  def list
+    @arr.map{ |item| Presenter(item) }
+  end
+end
+
+class SubclassedPresenter < SingleObjectPresenter
 end
 
 describe CachingPresenter do
+  it "knows what it is presenting on" do
+    SingleObjectPresenter.presents.should == :foo
+    SubclassedPresenter.presents.should == :foo
+  end
+  
   it "it automatically delegates methods that exist on the object being presented" do
     foo = mock("foo")
     foo.should_receive(:amount).and_return 10
@@ -200,3 +218,27 @@ describe CachingPresenter do
     bar2_presenter.say("bananas").should == "mango"
   end
 end
+
+
+describe CachingPresenter, "creating presenters using Presenter()" do
+  include CachingPresenter::InstantiationMethods
+  
+  it "can create a presenter given an instance of something" do
+    Presenter(SingleObject.new).should be_instance_of(SingleObjectPresenter)
+    Presenter(FirstBar.new).should be_instance_of(FirstBarPresenter)
+  end
+  
+  it "raises an error when a presenter can't be found matching the instance" do
+    obj = Object.new
+    lambda {
+      Presenter(obj)
+    }.should raise_error("ObjectPresenter was not found for #{obj.inspect}")
+  end
+  
+  it "can create presenters within presenters" do
+    arr = [SingleObject.new, SingleObject.new]
+    presenter = ArrayPresenter.new :arr => arr
+    presenter.list.map{|i| i.class }.should == [SingleObjectPresenter, SingleObjectPresenter]
+  end
+end
+
