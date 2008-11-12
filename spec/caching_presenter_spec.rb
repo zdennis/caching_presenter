@@ -3,12 +3,17 @@ require File.expand_path(File.dirname(__FILE__) + "/spec_helper")
 class SingleObject
 end
 
+class FooPresenter < CachingPresenter
+  presents :foo
+end
+
 class SingleObjectPresenter < CachingPresenter
   extend Forwardable
   
   presents :foo
 
   def_delegator :@foo, :raise_your_hand
+  def_delegator :@foo, :to_s
 
   def stop!
     @foo.stop
@@ -39,6 +44,10 @@ class SingleObjectWithConstructorRequirementsPresenter < CachingPresenter
   end
 end
 
+class RequiringPresenter < CachingPresenter
+  presents :foo, :requiring => [:bar]
+end
+
 class FirstBar
 end
 
@@ -62,7 +71,7 @@ class ArrayPresenter < CachingPresenter
   presents :arr
   
   def list
-    @arr.map{ |item| Presenter(item) }
+    @arr.map{ |item| Present(item) }
   end
 end
 
@@ -233,28 +242,59 @@ describe CachingPresenter do
     bar1_presenter.say("apples").should == "oranges"
     bar2_presenter.say("bananas").should == "mango"
   end
+  
+  it "is equivalent to another presenter of the same class when presenting on the same thing" do
+    obj = SingleObject.new
+    SingleObjectPresenter.new(:foo => obj).should == SingleObjectPresenter.new(:foo => obj)
+    SingleObjectPresenter.new(:foo => 4).should == SingleObjectPresenter.new(:foo => 4)
+    RequiringPresenter.new(:foo => obj, :bar => 4).should == RequiringPresenter.new(:foo => obj, :bar => 4)
+  end
+  
+  it "is not equivalent to another presenter of the same class presenting on two different things" do
+    SingleObjectPresenter.new(:foo => Object.new).should_not == SingleObjectPresenter.new(:foo => SingleObject.new)
+    obj = Object.new
+    RequiringPresenter.new(:foo => obj, :bar => 4).should_not == RequiringPresenter.new(:foo => obj, :bar => 5)
+    RequiringPresenter.new(:foo => 1, :bar => obj).should_not == RequiringPresenter.new(:foo => 2, :bar => obj)
+  end
+  
+  it "is not equivalent to another presenter of a different class when presenting on the same thing" do
+    obj, obj2 = SingleObject.new, SingleObject.new
+    SingleObjectPresenter.new(:foo => obj).should_not == FooPresenter.new(:foo => obj2)
+    SingleObjectPresenter.new(:foo => 4).should_not == FooPresenter.new(:foo => 6)
+  end
 end
 
 
-describe CachingPresenter, "creating presenters using Presenter()" do
+describe CachingPresenter, "creating presenters using Present()" do
   include CachingPresenter::InstantiationMethods
   
   it "can create a presenter given an instance of something" do
-    Presenter(SingleObject.new).should be_instance_of(SingleObjectPresenter)
-    Presenter(FirstBar.new).should be_instance_of(FirstBarPresenter)
+    obj = SingleObject.new
+    Present(obj).should == SingleObjectPresenter.new(:foo => obj)
+    obj = FirstBar.new
+    Present(obj).should == FirstBarPresenter.new(:bar => obj)
   end
   
   it "raises an error when a presenter can't be found matching the instance" do
     obj = Object.new
     lambda {
-      Presenter(obj)
+      Present(obj)
     }.should raise_error("ObjectPresenter was not found for #{obj.inspect}")
-  end
-  
-  it "can create presenters within presenters" do
-    arr = [SingleObject.new, SingleObject.new]
-    presenter = ArrayPresenter.new :arr => arr
-    presenter.list.map{|i| i.presenter_class }.should == [SingleObjectPresenter, SingleObjectPresenter]
   end
 end
 
+describe CachingPresenter, "creating a collection of presenters using PresentCollection()" do
+  include CachingPresenter::InstantiationMethods
+  
+  it "returns an array of presenters based on the class of the elements given" do
+    arr = [SingleObject.new, SingleObject.new, FirstBar.new]
+    PresentCollection(arr).should == [SingleObjectPresenter.new(:foo=>arr[0]), SingleObjectPresenter.new(:foo=>arr[1]), FirstBarPresenter.new(:bar => arr[2])]
+  end
+
+  it "raises an error when a presenter can't be found matching the instance" do
+    arr = [Object.new]
+    lambda {
+      PresentCollection(arr)
+    }.should raise_error("ObjectPresenter was not found for #{arr[0].inspect}")
+  end
+end

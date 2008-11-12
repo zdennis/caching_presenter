@@ -9,6 +9,14 @@ class CachingPresenter
     undef_method method if respond_to?(method)
   end
   
+  def ==(other)
+    if self.presenter_class == other.presenter_class
+      instance_variables.sort.map{ |ivar| instance_variable_get(ivar) } == other.instance_variables.sort.map{ |ivar| other.instance_variable_get(ivar) }
+    else
+      false
+    end
+  end
+  
   def respond_to?(*args)
     super || presents.respond_to?(*args)
   end
