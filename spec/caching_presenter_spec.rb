@@ -71,7 +71,7 @@ class ArrayPresenter < CachingPresenter
   presents :arr
   
   def list
-    @arr.map{ |item| Present(item) }
+    @arr.map{ |item| present(item) }
   end
 end
 
@@ -265,36 +265,39 @@ describe CachingPresenter do
 end
 
 
-describe CachingPresenter, "creating presenters using Present()" do
+describe CachingPresenter, "creating presenters using present()" do
   include CachingPresenter::InstantiationMethods
   
-  it "can create a presenter given an instance of something" do
+  it "can create a presenter based on the class of a given instance" do
     obj = SingleObject.new
-    Present(obj).should == SingleObjectPresenter.new(:foo => obj)
+    present(obj).should == SingleObjectPresenter.new(:foo => obj)
     obj = FirstBar.new
-    Present(obj).should == FirstBarPresenter.new(:bar => obj)
+    present(obj).should == FirstBarPresenter.new(:bar => obj)
   end
   
-  it "raises an error when a presenter can't be found matching the instance" do
+  it "raises an error when a presenter can't be found for the given instance" do
     obj = Object.new
     lambda {
-      Present(obj)
+      present(obj)
     }.should raise_error("ObjectPresenter was not found for #{obj.inspect}")
   end
 end
 
-describe CachingPresenter, "creating a collection of presenters using PresentCollection()" do
+describe CachingPresenter, "creating a collection of presenters using present_collection()" do
   include CachingPresenter::InstantiationMethods
   
   it "returns an array of presenters based on the class of the elements given" do
     arr = [SingleObject.new, SingleObject.new, FirstBar.new]
-    PresentCollection(arr).should == [SingleObjectPresenter.new(:foo=>arr[0]), SingleObjectPresenter.new(:foo=>arr[1]), FirstBarPresenter.new(:bar => arr[2])]
+    present_collection(arr).should == [
+      SingleObjectPresenter.new(:foo=>arr[0]), 
+      SingleObjectPresenter.new(:foo=>arr[1]), 
+      FirstBarPresenter.new(:bar => arr[2])]
   end
 
   it "raises an error when a presenter can't be found matching the instance" do
     arr = [Object.new]
     lambda {
-      PresentCollection(arr)
+      present_collection(arr)
     }.should raise_error("ObjectPresenter was not found for #{arr[0].inspect}")
   end
 end

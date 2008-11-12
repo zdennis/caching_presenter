@@ -1,5 +1,5 @@
 module CachingPresenter::InstantiationMethods
-  def Present(obj)
+  def present(obj)
     presenter_class_name = "#{obj.class.name}Presenter"
     if Object.const_defined?(presenter_class_name)
       presenter_class = Object.const_get(presenter_class_name)
@@ -9,7 +9,7 @@ module CachingPresenter::InstantiationMethods
     end
   end
   
-  def PresentCollection(collection)
-    collection.map{ |e| Present(e) }
+  def present_collection(collection)
+    collection.map{ |e| present(e) }
   end
 end
