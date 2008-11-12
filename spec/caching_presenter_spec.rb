@@ -275,6 +275,13 @@ describe CachingPresenter, "creating presenters using present()" do
     present(obj).should == FirstBarPresenter.new(:bar => obj)
   end
   
+  it "can forcefully create a presenter based on an option passed, ignoring the class of a given instance" do
+    obj = SingleObject.new
+    present(obj, :as => :FirstBar).should == FirstBarPresenter.new(:bar => obj)
+    obj = FirstBar.new
+    present(obj, :as => :SingleObject).should == SingleObjectPresenter.new(:foo => obj)
+  end
+  
   it "raises an error when a presenter can't be found for the given instance" do
     obj = Object.new
     lambda {
@@ -291,6 +298,14 @@ describe CachingPresenter, "creating a collection of presenters using present_co
     present_collection(arr).should == [
       SingleObjectPresenter.new(:foo=>arr[0]), 
       SingleObjectPresenter.new(:foo=>arr[1]), 
+      FirstBarPresenter.new(:bar => arr[2])]
+  end
+
+  it "returns an array of presenters based using a passed in option, ignoring the class of the elements given" do
+    arr = [SingleObject.new, SingleObject.new, FirstBar.new]
+    present_collection(arr, :as => :FirstBar).should == [
+      FirstBarPresenter.new(:bar=>arr[0]), 
+      FirstBarPresenter.new(:bar=>arr[1]), 
       FirstBarPresenter.new(:bar => arr[2])]
   end
 
