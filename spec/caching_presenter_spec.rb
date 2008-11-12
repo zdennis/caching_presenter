@@ -295,18 +295,26 @@ describe CachingPresenter, "creating a collection of presenters using present_co
   
   it "returns an array of presenters based on the class of the elements given" do
     arr = [SingleObject.new, SingleObject.new, FirstBar.new]
-    present_collection(arr).should == [
-      SingleObjectPresenter.new(:foo=>arr[0]), 
-      SingleObjectPresenter.new(:foo=>arr[1]), 
+    present_collection(arr.dup).should == [
+      SingleObjectPresenter.new(:foo => arr[0]), 
+      SingleObjectPresenter.new(:foo => arr[1]), 
       FirstBarPresenter.new(:bar => arr[2])]
   end
 
   it "returns an array of presenters based using a passed in option, ignoring the class of the elements given" do
     arr = [SingleObject.new, SingleObject.new, FirstBar.new]
-    present_collection(arr, :as => :FirstBar).should == [
-      FirstBarPresenter.new(:bar=>arr[0]), 
-      FirstBarPresenter.new(:bar=>arr[1]), 
+    present_collection(arr.dup, :as => :FirstBar).should == [
+      FirstBarPresenter.new(:bar => arr[0]), 
+      FirstBarPresenter.new(:bar => arr[1]), 
       FirstBarPresenter.new(:bar => arr[2])]
+  end
+
+  it "should return the same array, not a new one" do
+    arr = [SingleObject.new]
+    def arr.foo
+      "foo"
+    end
+    present_collection(arr).foo.should == "foo"
   end
 
   it "raises an error when a presenter can't be found matching the instance" do

@@ -10,6 +10,6 @@ module CachingPresenter::InstantiationMethods
   end
   
   def present_collection(collection, options={})
-    collection.map{ |e| present(e, options) }
+    collection.map!{ |e| present(e, options) }
   end
 end
