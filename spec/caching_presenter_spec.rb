@@ -286,7 +286,7 @@ describe CachingPresenter, "creating presenters using present()" do
     obj = Object.new
     lambda {
       present(obj)
-    }.should raise_error("ObjectPresenter was not found for #{obj.inspect}")
+    }.should raise_error(NameError, "uninitialized constant ObjectPresenter")
   end
 end
 
@@ -321,6 +321,6 @@ describe CachingPresenter, "creating a collection of presenters using present_co
     arr = [Object.new]
     lambda {
       present_collection(arr)
-    }.should raise_error("ObjectPresenter was not found for #{arr[0].inspect}")
+    }.should raise_error(NameError, "uninitialized constant ObjectPresenter")
   end
 end
