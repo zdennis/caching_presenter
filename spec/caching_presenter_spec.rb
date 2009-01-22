@@ -7,6 +7,15 @@ class FooPresenter < CachingPresenter
   presents :foo
 end
 
+module Example
+  class NamedSpacedObject
+  end
+
+  class NamedSpacedObjectPresenter < CachingPresenter
+    presents :foo
+  end  
+end
+
 class SingleObjectPresenter < CachingPresenter
   extend Forwardable
   
@@ -273,6 +282,11 @@ describe CachingPresenter, "creating presenters using present()" do
     present(obj).should == SingleObjectPresenter.new(:foo => obj)
     obj = FirstBar.new
     present(obj).should == FirstBarPresenter.new(:bar => obj)
+  end
+  
+  it "can create a presenter with a namespaced class" do
+    obj = Example::NamedSpacedObject.new
+    present(obj).should == Example::NamedSpacedObjectPresenter.new(:foo => obj)
   end
   
   it "can forcefully create a presenter based on an option passed, ignoring the class of a given instance" do
