@@ -41,12 +41,13 @@ In short it memoizes all method calls made through the presenter. That is, you c
 
 == Github
 
-* repos: http://github.com/zdennis/caching_presenter/ 
-* wiki: http://github.com/zdennis/caching_presenter/wiki
+* repos: http://github.com/mhs/caching_presenter/ 
+* wiki: http://github.com/mhs/caching_presenter/wiki
 
 == Contact
 
-* Zach Dennis , zach dot dennis at gmail dot com
+* Zach Dennis, zdennis@mutuallyhuman.com
+* http://www.mutuallyhuman.com
 * http://www.continuousthinking.com
 
 
