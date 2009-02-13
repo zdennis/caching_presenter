@@ -1,9 +1,10 @@
 module CachingPresenter::InstantiationMethods
   def present(obj, options={})
-    presenter_class_name = "#{options[:as] || obj.class.name}Presenter"
+    options = options.dup
+    presenter_class_name = "#{options.delete(:as) || obj.class.name}Presenter"
     # TODO: Remove requirement of active support
     presenter_class = _constantize(presenter_class_name)
-    presenter_class.new presenter_class.presents => obj
+    presenter_class.new options.merge(presenter_class.presents => obj)
   rescue LoadError
     raise "#{presenter_class_name} was not found for #{obj.inspect}"
   end

@@ -302,6 +302,12 @@ describe CachingPresenter, "creating presenters using present()" do
       present(obj)
     }.should raise_error(NameError, "uninitialized constant ObjectPresenter")
   end
+  
+  it "passes all options other that :as to the presenter constructor" do
+    object = SingleObject.new
+    RequiringPresenter.should_receive(:new).with(:foo => object, :bar => 1)
+    present object, :as => "Requiring", :bar => 1
+  end
 end
 
 describe CachingPresenter, "creating a collection of presenters using present_collection()" do
@@ -323,7 +329,7 @@ describe CachingPresenter, "creating a collection of presenters using present_co
       FirstBarPresenter.new(:bar => arr[2])]
   end
 
-  it "should return the same array, not a new one" do
+  it "should return the same array, not a new one so that Active Record associations can be used" do
     arr = [SingleObject.new]
     def arr.foo
       "foo"
