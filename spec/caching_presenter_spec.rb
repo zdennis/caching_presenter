@@ -86,7 +86,7 @@ describe CachingPresenter do
 
   it "should not affect the behavior of method calls that take blocks" do
     ArrayPresenter = Class.new(CachingPresenter)
-    ArrayPresenter.instance_eval do
+    ArrayPresenter.class_eval do
       presents :arr
       def list
         @arr.map{ |item| present(item) }
@@ -96,7 +96,7 @@ describe CachingPresenter do
     presenter.map{ |i| i**2 }.should == [1,4,9]
     presenter.map{ |i| i**3 }.should == [1,8,27]
   end
-    
+  
   it "should raise method missing errors when the object being presented on doesn't respond to an unknown method" do
     presenter = SingleObjectPresenter.new(:foo => Object.new)
     lambda { presenter.amount }.should raise_error(NoMethodError)
@@ -232,6 +232,46 @@ describe CachingPresenter, "caching methods" do
     presenter = SingleObjectPresenter.new(:foo => foo)
     presenter.stop!.should == "stopped"
     presenter.stop!.should == "stopped"  
+  end
+  
+  it "should not try to cache assignment/writer methods" do
+    myclass = Class.new(CachingPresenter)
+    myclass.class_eval do 
+      presents :foo
+      attr_writer :bar
+    end
+    presenter = myclass.new(:foo => Object.new)
+    presenter.bar = 5
+    presenter.bar = 4
+  end
+  
+  describe "caching hash-like access with the #[] method" do
+    it "should be able to cache the [] method when the object being presented on it responds to it" do
+      myclass = Class.new(CachingPresenter)
+      myclass.class_eval do 
+        presents :foo
+      end
+      foo = {}
+      foo.should_receive(:[]).with(:water).exactly(1).times.and_return "is wet"
+      presenter = myclass.new(:foo => foo)
+      presenter[:water].should == "is wet"
+      presenter[:water].should == "is wet"
+    end
+
+    it "should be able to cache an overridden [] method" do
+      myclass = Class.new(CachingPresenter)
+      myclass.class_eval do 
+        presents :foo
+        def [](key)
+          @foo.do_something_else(key)
+        end
+      end
+      foo = {}
+      foo.should_receive(:do_something_else).with(:water).exactly(1).times.and_return "is wet"
+      presenter = myclass.new(:foo => foo)
+      presenter[:water].should == "is wet"
+      presenter[:water].should == "is wet"
+    end
   end
 end
 

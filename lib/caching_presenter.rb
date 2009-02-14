@@ -90,7 +90,7 @@ class CachingPresenter
     end
     
     def method_added(method_name)
-      memoize method_name
+      memoize method_name.to_s
     end
   end
 end

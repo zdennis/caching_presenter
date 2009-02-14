@@ -1,9 +1,28 @@
 class CachingPresenter
   module Memoizable
-    DO_NOT_MEMOIZE = %w(presents initialize method_missing class)
-  
-    MEMOIZED_IVAR = Proc.new do |symbol|
-      "@_memoized_#{symbol.to_s.sub(/\?\Z/, '_query').sub(/!\Z/, '_bang')}".to_sym
+    METHOD_PREFIX = "_unmemoized_"
+    DO_NOT_MEMOIZE = [/^#{METHOD_PREFIX}/, /^presents$/, /^initialize$/, /^method_missing$/, /^class$/, /=$/]
+    REPLACEMENT_ENCODINGS = {
+      /\[\]/ => "_square_brackets",
+      /\?\Z/ => "_query",
+      /\!\Z/ => "_bang"
+    }
+    
+    def self.encode(str)
+      str = str.dup
+      REPLACEMENT_ENCODINGS.each_pair do |pattern, replacement|
+        str.gsub!(pattern, replacement)
+      end
+      str
+    end
+    
+    def self.encode_ivar(ivar_name)
+      "@_memoized_#{encode(ivar_name)}".to_sym
+    end
+    
+    def self.encode_method_name(method_name)
+      method_name = "#{METHOD_PREFIX}#{encode(method_name)}"
+      method_name.to_sym
     end
 
     def self.extended(klass)
@@ -12,12 +31,12 @@ class CachingPresenter
     end
 
     def memoize(method_name)
-      return if @cached_methods.include?(method_name) || DO_NOT_MEMOIZE.include?(method_name.to_s)
-      original_method = :"_unmemoized_#{method_name}"
+      return if @cached_methods.include?(method_name) || DO_NOT_MEMOIZE.select{ |rgx| method_name.to_s =~ rgx}.any?
+      original_method = Memoizable.encode_method_name(method_name)
       @cached_methods << method_name << original_method
       alias_method original_method, method_name
 
-      memoized_ivar = MEMOIZED_IVAR.call(method_name)
+      memoized_ivar = Memoizable.encode_ivar(method_name)
       class_eval <<-EOS, __FILE__, __LINE__
         def #{method_name}(*args, &blk)
           #{memoized_ivar} ||= {}
