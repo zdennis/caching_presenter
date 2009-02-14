@@ -117,7 +117,7 @@ an example:
 * repos: http://github.com/mhs/caching_presenter/ 
 * wiki: http://github.com/mhs/caching_presenter/wiki
 
-== Maintainers
+== Developers
 
 * Zach Dennis, zdennis@mutuallyhuman.com, http://www.continuousthinking.com
 * Mark VanHolstyn, mvanholstyn@mutuallyhuman.com
