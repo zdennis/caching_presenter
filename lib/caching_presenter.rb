@@ -45,21 +45,24 @@ class CachingPresenter
     end
 
     def write_constructor(options)
-      constructor_options = options[:options]
-      constructor_options[:requiring] ||= []
+      constructor_options = options[:options].dup
+      if constructor_options.has_key?(:requiring)
+        warn "The :requiring option is deprecated. Please use :accepts instead."
+      end
+      constructor_options[:accepts] ||= []
       klass = self
       define_method(:initialize) do |args|
+        @presents_id = options[:presents]
         args = args.dup
-        required_arguments = constructor_options[:requiring] + [options[:presents]]
-        missing_arguments = required_arguments - args.keys
-        raise ArgumentError, "missing arguments: #{missing_arguments.join(', ')}" if missing_arguments.any?
-        required_arguments.each do |key|
+        raise ArgumentError, "missing object to present on: #{@presents_id}" unless args[@presents_id]        
+        arguments_to_instantiate = constructor_options[:accepts] + [@presents_id]
+        arguments_to_instantiate.each do |key|
           self.instance_variable_set "@#{key}", args[key]
         end
       end
 
       define_method(:presents) do
-        self.instance_variable_get "@#{options[:presents]}"
+        self.instance_variable_get "@#{@presents_id}"
       end
 
       class_eval <<-EOS, __FILE__, __LINE__

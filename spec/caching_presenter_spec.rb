@@ -1,36 +1,16 @@
 require File.expand_path(File.dirname(__FILE__) + "/spec_helper")
 
-class SingleObject
-end
-
-class FooPresenter < CachingPresenter
-  presents :foo
-end
-
-module Example
-  class NamedSpacedObject
-  end
-
-  class NamedSpacedObjectPresenter < CachingPresenter
-    presents :foo
-  end  
-end
-
+class SingleObject ; end
 class SingleObjectPresenter < CachingPresenter
-  extend Forwardable
-  
-  presents :foo
-
+  extend Forwardable  
+  presents :foo, :accepts => [:bar, :baz]
   def_delegator :@foo, :raise_your_hand
   def_delegator :@foo, :to_s
 
-  def stop!
-    @foo.stop
-  end
-
-  def last_day?
-    @foo.last_day
-  end
+  def stop! ; @foo.stop ; end
+  def last_day? ; @foo.last_day ; end
+  def run(*args) ; @foo.run *args ; end
+  def sum ; @bar.amount + @baz.amount ; end
   
   def talk(&blk)
     if block_given?
@@ -39,53 +19,36 @@ class SingleObjectPresenter < CachingPresenter
       @foo.speak
     end
   end
-  
-  def run(*args)
-    @foo.run *args
-  end
 end
 
-class SingleObjectWithConstructorRequirementsPresenter < CachingPresenter
-  presents :foo, :requiring => [:bar, :baz]
-
-  def sum
-    @bar.amount + @baz.amount
-  end
-end
-
-class RequiringPresenter < CachingPresenter
-  presents :foo, :requiring => [:bar]
-end
-
-class FirstBar
-end
-
-class FirstBarPresenter < CachingPresenter
-  presents :bar
-
-  def say(what) 
-    @bar.say(what)
-  end
-end
-
-class SecondBarPresenter < CachingPresenter
-  presents :bar
-
-  def say(what) 
-    @bar.say(what)
-  end
-end
+class SubclassedPresenter < SingleObjectPresenter ; end
 
 class ArrayPresenter < CachingPresenter
   presents :arr
-  
-  def list
-    @arr.map{ |item| present(item) }
-  end
+  def list ; @arr.map{ |item| present(item) } ; end
 end
 
-class SubclassedPresenter < SingleObjectPresenter
+class FirstBar ; end
+
+class FirstBarPresenter < CachingPresenter
+  presents :bar
+  def say(what) ; @bar.say(what) ; end
 end
+
+class SecondBarPresenter < FirstBarPresenter ; end
+
+class FooPresenter < CachingPresenter
+  presents :foo
+end
+
+module Example
+  class NamedSpacedObject ; end
+
+  class NamedSpacedObjectPresenter < CachingPresenter
+    presents :foo
+  end  
+end
+
 
 describe CachingPresenter do
   it "should know what it is presenting on" do
@@ -114,67 +77,56 @@ describe CachingPresenter do
     presenter.amount.should == 10
   end
   
-  it "should be able to present on an object with additional constructor requirements" do
+  it "should accept additional constructor arguments" do
     foo, bar, baz = mock("foo"), mock("bar"), mock("baz")
     bar.should_receive(:amount).and_return 100
     baz.should_receive(:amount).and_return 200
-    presenter = SingleObjectWithConstructorRequirementsPresenter.new(:foo => foo, :bar => bar, :baz => baz)
+    presenter = SingleObjectPresenter.new(:foo => foo, :bar => bar, :baz => baz)
     presenter.sum.should == 300
   end
   
   it "should raise when the object being presented on isn't passed in" do
     lambda { 
       SingleObjectPresenter.new(:ignored_argument => "here")
-    }.should raise_error(ArgumentError, "missing arguments: foo")
-  end
-  
-  it "should raise when required constructor arguments aren't passed in" do
-    lambda { 
-      SingleObjectWithConstructorRequirementsPresenter.new(:foo => mock("foo"))
-    }.should raise_error(ArgumentError, "missing arguments: bar, baz")
+    }.should raise_error(ArgumentError, "missing object to present on: foo")
   end
 
-  it "should work with method calls that take blocks" do
-    arr = [1,2,3]
-    presenter = ArrayPresenter.new :arr => arr
+  it "should not affect the behavior of method calls that take blocks" do
+    presenter = ArrayPresenter.new :arr => [1,2,3]
     presenter.map{ |i| i**2 }.should == [1,4,9]
     presenter.map{ |i| i**3 }.should == [1,8,27]
   end
     
   it "should raise method missing errors when the object being presented on doesn't respond to an unknown method" do
-    foo = Object.new
-    presenter = SingleObjectPresenter.new(:foo => foo)
+    presenter = SingleObjectPresenter.new(:foo => Object.new)
     lambda { presenter.amount }.should raise_error(NoMethodError)
   end
   
   it "should be able to present on two methods with the same name, but on different presenters" do
-    bar1 = mock("bar1")
-    bar2 = mock("bar2")
-    bar1_presenter = FirstBarPresenter.new(:bar => bar1)
-    bar2_presenter = SecondBarPresenter.new(:bar => bar2)
+    bar1, bar2 = mock("bar1"), mock("bar2")
     bar1.should_receive(:say).with("apples").and_return "oranges"
     bar2.should_receive(:say).with("bananas").and_return "mango"
+    bar1_presenter = FirstBarPresenter.new(:bar => bar1)
+    bar2_presenter = SecondBarPresenter.new(:bar => bar2)
     bar1_presenter.say("apples").should == "oranges"
     bar2_presenter.say("bananas").should == "mango"
   end
   
-  it "should be equivalent to another presenter of the same class when presenting on the same thing" do
-    obj = SingleObject.new
-    SingleObjectPresenter.new(:foo => obj).should == SingleObjectPresenter.new(:foo => obj)
-    SingleObjectPresenter.new(:foo => 4).should == SingleObjectPresenter.new(:foo => 4)
-    RequiringPresenter.new(:foo => obj, :bar => 4).should == RequiringPresenter.new(:foo => obj, :bar => 4)
+  it "should be equivalent to another presenter of the same class when presenting on the same things" do
+    obj, bar, baz = SingleObject.new, "bar string", 10
+    presenter = SingleObjectPresenter.new(:foo => obj, :bar => bar, :baz => baz)
+    presenter.should == SingleObjectPresenter.new(:foo => obj, :bar => bar, :baz => baz)
   end
   
   it "should not be equivalent to another presenter of the same class presenting on two different things" do
-    SingleObjectPresenter.new(:foo => Object.new).should_not == SingleObjectPresenter.new(:foo => SingleObject.new)
     obj = Object.new
-    RequiringPresenter.new(:foo => obj, :bar => 4).should_not == RequiringPresenter.new(:foo => obj, :bar => 5)
-    RequiringPresenter.new(:foo => 1, :bar => obj).should_not == RequiringPresenter.new(:foo => 2, :bar => obj)
+    SingleObjectPresenter.new(:foo => obj).should_not == SingleObjectPresenter.new(:foo => SingleObject.new)
+    SingleObjectPresenter.new(:foo => obj, :bar => 4).should_not == SingleObjectPresenter.new(:foo => obj, :bar => 5)
+    SingleObjectPresenter.new(:foo => 1, :bar => obj).should_not == SingleObjectPresenter.new(:foo => 2, :bar => obj)
   end
     
   it "should not be equivalent to a non caching presenter object" do
-    obj = SingleObject.new
-    SingleObjectPresenter.new(:foo => obj).should_not == 4
+    SingleObjectPresenter.new(:foo => SingleObject.new).should_not == 4
   end
   
   it "should not be equivalent to another presenter of a different class when presenting on the same thing" do
@@ -281,6 +233,7 @@ describe CachingPresenter, "caching methods" do
   end
 end
 
+
 describe CachingPresenter, "creating presenters using present()" do
   include CachingPresenter::InstantiationMethods
   
@@ -291,7 +244,7 @@ describe CachingPresenter, "creating presenters using present()" do
     present(obj).should == FirstBarPresenter.new(:bar => obj)
   end
   
-  it "should be able to  create a presenter with a namespaced class" do
+  it "should be able to create a presenter nested within a namespace" do
     obj = Example::NamedSpacedObject.new
     present(obj).should == Example::NamedSpacedObjectPresenter.new(:foo => obj)
   end
@@ -302,20 +255,21 @@ describe CachingPresenter, "creating presenters using present()" do
     obj = FirstBar.new
     present(obj, :as => :SingleObject).should == SingleObjectPresenter.new(:foo => obj)
   end
-  
+
+  it "should pass on all options other than :as to the presenter constructor" do
+    object = SingleObject.new
+    Example::NamedSpacedObjectPresenter.should_receive(:new).with(:foo => object, :bar => 1)
+    present object, :as => "Example::NamedSpacedObject", :bar => 1
+  end
+
   it "should raise an error when a presenter can't be found for the given instance" do
     obj = Object.new
     lambda {
       present(obj)
     }.should raise_error(NameError, "uninitialized constant ObjectPresenter")
   end
-  
-  it "should pass on all options other than :as to the presenter constructor" do
-    object = SingleObject.new
-    RequiringPresenter.should_receive(:new).with(:foo => object, :bar => 1)
-    present object, :as => "Requiring", :bar => 1
-  end
 end
+
 
 describe CachingPresenter, "creating a collection of presenters using present_collection()" do
   include CachingPresenter::InstantiationMethods
