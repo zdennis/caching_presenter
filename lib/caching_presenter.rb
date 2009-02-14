@@ -10,7 +10,7 @@ class CachingPresenter
   end
   
   def ==(other)
-    if self.presenter_class == other.presenter_class
+    if other.is_a?(CachingPresenter) && self.presenter_class == other.presenter_class
       instance_variables.sort.map{ |ivar| instance_variable_get(ivar) } == other.instance_variables.sort.map{ |ivar| other.instance_variable_get(ivar) }
     else
       false

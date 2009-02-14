@@ -267,9 +267,14 @@ describe CachingPresenter do
   end
   
   it "is not equivalent to another presenter of a different class when presenting on the same thing" do
-    obj, obj2 = SingleObject.new, SingleObject.new
-    SingleObjectPresenter.new(:foo => obj).should_not == FooPresenter.new(:foo => obj2)
-    SingleObjectPresenter.new(:foo => 4).should_not == FooPresenter.new(:foo => 6)
+    obj = SingleObject.new
+    SingleObjectPresenter.new(:foo => obj).should_not == FooPresenter.new(:foo => obj)
+    SingleObjectPresenter.new(:foo => 4).should_not == FooPresenter.new(:foo => 4)
+  end
+  
+  it "is not equivalent to a non caching presenter object" do
+    obj = SingleObject.new
+    SingleObjectPresenter.new(:foo => obj).should_not == 4
   end
 end
 
