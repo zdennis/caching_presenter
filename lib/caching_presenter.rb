@@ -1,7 +1,7 @@
-class CachingPresenter
-  require 'caching_presenter/memoizable'
-  require 'caching_presenter/instantiation_methods'
+require 'caching_presenter/memoizable'
+require 'caching_presenter/instantiation_methods'
 
+class CachingPresenter
   include InstantiationMethods
 
   alias :presenter_class :class

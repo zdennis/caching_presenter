@@ -21,29 +21,14 @@ class SingleObjectPresenter < CachingPresenter
   end
 end
 
-class SubclassedPresenter < SingleObjectPresenter ; end
-
-class ArrayPresenter < CachingPresenter
-  presents :arr
-  def list ; @arr.map{ |item| present(item) } ; end
-end
-
 class FirstBar ; end
-
 class FirstBarPresenter < CachingPresenter
   presents :bar
   def say(what) ; @bar.say(what) ; end
 end
 
-class SecondBarPresenter < FirstBarPresenter ; end
-
-class FooPresenter < CachingPresenter
-  presents :foo
-end
-
 module Example
   class NamedSpacedObject ; end
-
   class NamedSpacedObjectPresenter < CachingPresenter
     presents :foo
   end  
@@ -53,7 +38,7 @@ end
 describe CachingPresenter do
   it "should know what it is presenting on" do
     SingleObjectPresenter.presents.should == :foo
-    SubclassedPresenter.presents.should == :foo
+    Class.new(SingleObjectPresenter).presents.should == :foo
   end
 
   %w(class id to_param).each do |method|
@@ -100,6 +85,13 @@ describe CachingPresenter do
   end
 
   it "should not affect the behavior of method calls that take blocks" do
+    ArrayPresenter = Class.new(CachingPresenter)
+    ArrayPresenter.instance_eval do
+      presents :arr
+      def list
+        @arr.map{ |item| present(item) }
+      end
+    end
     presenter = ArrayPresenter.new :arr => [1,2,3]
     presenter.map{ |i| i**2 }.should == [1,4,9]
     presenter.map{ |i| i**3 }.should == [1,8,27]
@@ -111,6 +103,7 @@ describe CachingPresenter do
   end
   
   it "should be able to present on two methods with the same name, but on different presenters" do
+    SecondBarPresenter = Class.new(FirstBarPresenter)
     bar1, bar2 = mock("bar1"), mock("bar2")
     bar1.should_receive(:say).with("apples").and_return "oranges"
     bar2.should_receive(:say).with("bananas").and_return "mango"
@@ -139,8 +132,9 @@ describe CachingPresenter do
   
   it "should not be equivalent to another presenter of a different class when presenting on the same thing" do
     obj, obj2 = SingleObject.new, SingleObject.new
-    SingleObjectPresenter.new(:foo => obj).should_not == FooPresenter.new(:foo => obj2)
-    SingleObjectPresenter.new(:foo => 4).should_not == FooPresenter.new(:foo => 6)
+    AnotherFooPresenter = Class.new(SingleObjectPresenter)
+    SingleObjectPresenter.new(:foo => obj).should_not == AnotherFooPresenter.new(:foo => obj2)
+    SingleObjectPresenter.new(:foo => 4).should_not == AnotherFooPresenter.new(:foo => 6)
   end
 end
 
