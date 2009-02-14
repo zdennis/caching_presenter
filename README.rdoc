@@ -1,0 +1,136 @@
+= CachingPresenter - an implementation of the presenter pattern in Ruby
+
+== What is the presenter pattern?
+
+The presenter pattern is a technique used to separate presentation
+logic (aka display logic or view logic) from domain logic and from
+the view templates themselves. There are a number of reasons this 
+pattern is beneficial when used:
+
+* it stops presentation logic from creeping into domain objects and
+muddying up their implementation and their business logic
+* it stops unnecessary logic from creeping into the views themselves
+which should be as simple, flexible, and changeable as possible
+* it allows you to organize presentation logic in better ways
+than simply maintaining helper modules that are included 
+everywhere
+
+== Simple Example
+
+  class ProjectPresenter < CachingPresenter
+    presents :project
+    
+    def possible_managers
+      if @project.top_secret?
+        User.with_area_51_clearance.all
+      else
+        User.all
+      end
+    end
+  end
+
+In this example, there is most likely a view template which displays a drop down
+of possible managers for the project. When the project is top secret then only
+users with Area 51 clearance will be selectable from the UI, otherwise
+any user in the system will be selectable.
+
+Without some form of a presenter this logic will either creep up in the view
+template, be pushed down to a model, or be stuck in an application object (like
+a Rails controller). None of those spots are a very good home for this logic.
+
+Now, let's say we want to use the presenter in the view when generating the form for
+creating a project. Here's an example of what they would look like using
+a Rails html.erb template:
+
+  <% form_for @project do |f| %>
+    ...
+    <%= f.collection_select, :manager_id, @project.possible_managers, :id, :name %>
+    ...
+  <% end %>
+
+Now to make this possible we'd have to assign @project to an instance of
+ProjectPresenter. Here's an example of doing that in a Rails controller:
+
+  class ProjectsController < ApplicationController
+    def new
+      @project = present Project.new
+    end
+    
+    def update
+      project = Project.find params[:id]
+      @project = present Project.new
+    end
+  end
+
+Won't this screw up the views that rely on it being a Project? Nope. That's one
+of the features of CachingPresenter. It lets you decorate the
+object you want to present on, but it will behave and act just like that object.
+This includes delegating any methods it doesn't know about to the object that
+is being presented on. And it's optimized for the views.
+
+== Optimized
+
+CachingPresenter memoizes all method calls made through it. That is, you call a method once and all subsequent calls return the cached value from the first call. This works with method arguments as well. It will not cache the following types of method calls:
+
+* any assignment method, # ie: #bar=
+* any method that takes a block, ie: #each, #map, etc.
+
+Basically, it's designed to cache any read-oriented method call. Here's
+an example:
+
+  class ProjectPresenter < CachingPresenter
+    # writes a constructed for ProjectPresenter.new :project => ...
+    presents :project
+    
+    def foo(arg)
+      # this method is automatically memoized
+    end
+    
+    # the 'bar' method is automatically memoized
+    delegate :bar, :to => :@project
+  end
+  
+  presenter = ProjectPresenter.new :project => Project.first
+  
+  # executes the first time, but the second time it returns the cached result
+  presenter.foo "something"
+  presenter.foo "something"
+  
+  # even though we called #foo, this time its with a different argument
+  # so it executes for the first time, and then returns the cached result
+  # the second time
+  presenter.foo "anything"  
+  presenter.foo "anything"  
+  
+  # the 'id' method doesn't exist on the presenter, but the project
+  # has an 'id' method, so this will automatically memoize that
+  # method call, so it will be execute the first time it is called, but then
+  # it will return the cached result the second time
+  presenter.id
+  presenter.id
+
+  # even though we called 'foo' earlier, this time it's called with a block
+  # and CachingPresenter will always execute this. Both of these calls
+  # are executed without caching/memoization techniques.
+  presenter.foo { do_something }
+  presenter.foo { do_something_else }
+
+== Github
+
+* repos: http://github.com/mhs/caching_presenter/ 
+* wiki: http://github.com/mhs/caching_presenter/wiki
+
+== Maintainers
+
+* Zach Dennis
+* Mark VanHolstyn
+
+== Contact
+
+* Zach Dennis, zdennis@mutuallyhuman.com
+* http://www.mutuallyhuman.com
+* http://www.continuousthinking.com
+
+* Mark VanHolstyn, mvanholstyn@mutuallyhuman.com
+* http://www.mutuallyhuman.com
+* http://www.continuousthinking.com
