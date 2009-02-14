@@ -7,12 +7,9 @@ logic (aka display logic or view logic) from domain logic and from
 the view templates themselves. There are a number of reasons this 
 pattern is beneficial when used:
 
-* it stops presentation logic from creeping into domain objects and
-muddying up their implementation and their business logic
-* it stops unnecessary logic from creeping into the views themselves
-which should be as simple, flexible, and changeable as possible
-* it allows you to organize presentation logic in better ways
-than simply maintaining helper modules that are included 
+* it stops presentation logic from creeping into domain objects and muddying up their implementation and their business logic
+* it stops unnecessary logic from creeping into the views themselves which should be as simple, flexible, and changeable as possible
+* it allows you to organize presentation logic in better ways than simply maintaining helper modules that are included 
 everywhere
 
 == Simple Example
@@ -122,15 +119,5 @@ an example:
 
 == Maintainers
 
-* Zach Dennis
-* Mark VanHolstyn
-
-== Contact
-
-* Zach Dennis, zdennis@mutuallyhuman.com
-* http://www.mutuallyhuman.com
-* http://www.continuousthinking.com
-
+* Zach Dennis, zdennis@mutuallyhuman.com, http://www.continuousthinking.com
 * Mark VanHolstyn, mvanholstyn@mutuallyhuman.com
-* http://www.mutuallyhuman.com
-* http://www.continuousthinking.com
