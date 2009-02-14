@@ -9,8 +9,7 @@ pattern is beneficial when used:
 
 * it stops presentation logic from creeping into domain objects and muddying up their implementation and their business logic
 * it stops unnecessary logic from creeping into the views themselves which should be as simple, flexible, and changeable as possible
-* it allows you to organize presentation logic in better ways than simply maintaining helper modules that are included 
-everywhere
+* it allows you to organize presentation logic in better ways than simply maintaining helper modules that are included  everywhere
 
 == Simple Example
 
