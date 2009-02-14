@@ -2,7 +2,6 @@ module CachingPresenter::InstantiationMethods
   def present(obj, options={})
     options = options.dup
     presenter_class_name = "#{options.delete(:as) || obj.class.name}Presenter"
-    # TODO: Remove requirement of active support
     presenter_class = _constantize(presenter_class_name)
     presenter_class.new options.merge(presenter_class.presents => obj)
   rescue LoadError
