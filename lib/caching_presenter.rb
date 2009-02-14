@@ -3,6 +3,8 @@ require 'caching_presenter/instantiation_methods'
 
 class CachingPresenter
   include InstantiationMethods
+  
+  VERSION = "0.8.0"
 
   alias :presenter_class :class
   %w(class id to_param).each do |method|

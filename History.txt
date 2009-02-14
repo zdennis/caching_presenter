@@ -1,0 +1,15 @@
+== 0.9.0, February 14th, 2009
+
+* Removed/deprecated :requiring option in favor of :accepts
+* CachingPresenter no longer tries to cache writer methods, ie; #foo=
+* CachingPresenter successfully caches hash-like getters, ie: foo["blah"]
+* CachingPresenter will raise an ArgumentError if an unknown option is used when declaring
+ what a presenter presents on 
+* Update #== to on blow up when passing it an object which is not a subclass of CachingPresenter
+* Pass options from present and present_collection to new
+
+== Before any release, before November 12th, 2008 
+
+* made #present take advantage of lazy loading features of Rails (Brandon Keepers)
+* updated #present_collection to use #map! instad of #map so the array is preserved
+* added the :as option to the #present and #present_collection methods
