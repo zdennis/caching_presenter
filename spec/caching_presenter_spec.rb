@@ -64,6 +64,14 @@ describe CachingPresenter do
     end
   end
   
+  it "should raise an error when an unknown option is used to declare what a presenter presents on" do
+    lambda {
+      Class.new(CachingPresenter) do
+        presents :foo, :blam => 1, :wam => 2, :accepts => [:bar, :baz]
+      end
+    }.should raise_error(ArgumentError, "unknown option(s): blam, wam")
+  end
+  
   it "should delegate respond_to? to the object being presented when the presenter can't answer it" do
     foo = stub("foo", :something_crazy => "yes")
     presenter = SingleObjectPresenter.new(:foo => foo)

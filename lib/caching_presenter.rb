@@ -49,6 +49,13 @@ class CachingPresenter
       if constructor_options.has_key?(:requiring)
         warn "The :requiring option is deprecated. Please use :accepts instead."
       end
+      
+      valid_options = [:accepts]
+      unknown_options = (constructor_options.keys - valid_options).map{ |opt| opt.to_s }
+      if unknown_options.any?
+        raise ArgumentError, "unknown option(s): #{unknown_options.sort.join(', ')}"
+      end
+
       constructor_options[:accepts] ||= []
       klass = self
       define_method(:initialize) do |args|
