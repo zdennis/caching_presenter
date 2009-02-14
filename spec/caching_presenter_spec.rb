@@ -134,6 +134,58 @@ describe CachingPresenter do
     }.should raise_error(ArgumentError, "missing arguments: bar, baz")
   end
 
+  it "should work with method calls that take blocks" do
+    arr = [1,2,3]
+    presenter = ArrayPresenter.new :arr => arr
+    presenter.map{ |i| i**2 }.should == [1,4,9]
+    presenter.map{ |i| i**3 }.should == [1,8,27]
+  end
+    
+  it "should raise method missing errors when the object being presented on doesn't respond to an unknown method" do
+    foo = Object.new
+    presenter = SingleObjectPresenter.new(:foo => foo)
+    lambda { presenter.amount }.should raise_error(NoMethodError)
+  end
+  
+  it "should be able to present on two methods with the same name, but on different presenters" do
+    bar1 = mock("bar1")
+    bar2 = mock("bar2")
+    bar1_presenter = FirstBarPresenter.new(:bar => bar1)
+    bar2_presenter = SecondBarPresenter.new(:bar => bar2)
+    bar1.should_receive(:say).with("apples").and_return "oranges"
+    bar2.should_receive(:say).with("bananas").and_return "mango"
+    bar1_presenter.say("apples").should == "oranges"
+    bar2_presenter.say("bananas").should == "mango"
+  end
+  
+  it "should be equivalent to another presenter of the same class when presenting on the same thing" do
+    obj = SingleObject.new
+    SingleObjectPresenter.new(:foo => obj).should == SingleObjectPresenter.new(:foo => obj)
+    SingleObjectPresenter.new(:foo => 4).should == SingleObjectPresenter.new(:foo => 4)
+    RequiringPresenter.new(:foo => obj, :bar => 4).should == RequiringPresenter.new(:foo => obj, :bar => 4)
+  end
+  
+  it "should not be equivalent to another presenter of the same class presenting on two different things" do
+    SingleObjectPresenter.new(:foo => Object.new).should_not == SingleObjectPresenter.new(:foo => SingleObject.new)
+    obj = Object.new
+    RequiringPresenter.new(:foo => obj, :bar => 4).should_not == RequiringPresenter.new(:foo => obj, :bar => 5)
+    RequiringPresenter.new(:foo => 1, :bar => obj).should_not == RequiringPresenter.new(:foo => 2, :bar => obj)
+  end
+    
+  it "should not be equivalent to a non caching presenter object" do
+    obj = SingleObject.new
+    SingleObjectPresenter.new(:foo => obj).should_not == 4
+  end
+  
+  it "should not be equivalent to another presenter of a different class when presenting on the same thing" do
+    obj, obj2 = SingleObject.new, SingleObject.new
+    SingleObjectPresenter.new(:foo => obj).should_not == FooPresenter.new(:foo => obj2)
+    SingleObjectPresenter.new(:foo => 4).should_not == FooPresenter.new(:foo => 6)
+  end
+end
+
+
+describe CachingPresenter, "caching methods" do
   it "should cache method calls without arguments" do
     foo = mock("foo")
     foo.should_receive(:speak).with().at_most(1).times.and_return "Speaking!"
@@ -152,8 +204,8 @@ describe CachingPresenter do
     presenter.run(:near).should == "Running nearby!"
     presenter.run(:near).should == "Running nearby!"
   end
-  
-  it "should return the results from different method calls with the same arguments" do
+
+  it "should be able to cache the results from different method calls with the same arguments" do
     foo = mock("foo")
     foo.should_receive(:walk).with(:far).at_most(1).times.and_return "Walking far!"
     foo.should_receive(:run).with(:far).at_most(1).times.and_return "Running far!"
@@ -163,7 +215,7 @@ describe CachingPresenter do
     presenter.run(:far).should == "Running far!"
     presenter.run(:far).should == "Running far!"
   end
-  
+
   it "should not cache method calls with blocks" do
     foo = mock("foo")
     foo.should_receive(:speak).with().exactly(2).times().and_return "Speaking!"
@@ -171,14 +223,7 @@ describe CachingPresenter do
     presenter.talk { |o| o.speak }.should == "Speaking!"
     presenter.talk { |o| o.speak }.should == "Speaking!"
   end
-  
-  it "should work with method calls that take blocks" do
-    arr = [1,2,3]
-    presenter = ArrayPresenter.new :arr => arr
-    presenter.map{ |i| i**2 }.should == [1,4,9]
-    presenter.map{ |i| i**3 }.should == [1,8,27]
-  end
-    
+
   it "should cache explicitly delegated methods" do
     foo = mock("foo")
     foo.should_receive(:raise_your_hand).with().at_most(1).times.and_return "raising my hand"
@@ -234,50 +279,7 @@ describe CachingPresenter do
     presenter.stop!.should == "stopped"
     presenter.stop!.should == "stopped"  
   end
-  
-  it "should raise method missing errors when the object being presented on doesn't respond to an unknown method" do
-    foo = Object.new
-    presenter = SingleObjectPresenter.new(:foo => foo)
-    lambda { presenter.amount }.should raise_error(NoMethodError)
-  end
-  
-  it "should be able to present on two methods with the same name, but on different presenters" do
-    bar1 = mock("bar1")
-    bar2 = mock("bar2")
-    bar1_presenter = FirstBarPresenter.new(:bar => bar1)
-    bar2_presenter = SecondBarPresenter.new(:bar => bar2)
-    bar1.should_receive(:say).with("apples").and_return "oranges"
-    bar2.should_receive(:say).with("bananas").and_return "mango"
-    bar1_presenter.say("apples").should == "oranges"
-    bar2_presenter.say("bananas").should == "mango"
-  end
-  
-  it "should be equivalent to another presenter of the same class when presenting on the same thing" do
-    obj = SingleObject.new
-    SingleObjectPresenter.new(:foo => obj).should == SingleObjectPresenter.new(:foo => obj)
-    SingleObjectPresenter.new(:foo => 4).should == SingleObjectPresenter.new(:foo => 4)
-    RequiringPresenter.new(:foo => obj, :bar => 4).should == RequiringPresenter.new(:foo => obj, :bar => 4)
-  end
-  
-  it "should not be equivalent to another presenter of the same class presenting on two different things" do
-    SingleObjectPresenter.new(:foo => Object.new).should_not == SingleObjectPresenter.new(:foo => SingleObject.new)
-    obj = Object.new
-    RequiringPresenter.new(:foo => obj, :bar => 4).should_not == RequiringPresenter.new(:foo => obj, :bar => 5)
-    RequiringPresenter.new(:foo => 1, :bar => obj).should_not == RequiringPresenter.new(:foo => 2, :bar => obj)
-  end
-    
-  it "should not be equivalent to a non caching presenter object" do
-    obj = SingleObject.new
-    SingleObjectPresenter.new(:foo => obj).should_not == 4
-  end
-  
-  it "should not be equivalent to another presenter of a different class when presenting on the same thing" do
-    obj, obj2 = SingleObject.new, SingleObject.new
-    SingleObjectPresenter.new(:foo => obj).should_not == FooPresenter.new(:foo => obj2)
-    SingleObjectPresenter.new(:foo => 4).should_not == FooPresenter.new(:foo => 6)
-  end
 end
-
 
 describe CachingPresenter, "creating presenters using present()" do
   include CachingPresenter::InstantiationMethods
