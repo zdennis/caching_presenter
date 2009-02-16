@@ -40,6 +40,12 @@ describe CachingPresenter do
     SingleObjectPresenter.presents.should == :foo
     Class.new(SingleObjectPresenter).presents.should == :foo
   end
+  
+  it "should be able to be queried for what it accepts" do
+    presenter = SingleObjectPresenter.new :foo => mock("foo")
+    presenter.accepts?(:bar).should be_true
+    presenter.accepts?(:unknown).should be_false
+  end
 
   %w(class id to_param).each do |method|
     it "should always delegate #{method} to the source of the presenter" do

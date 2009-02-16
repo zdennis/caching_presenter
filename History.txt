@@ -1,4 +1,8 @@
-== 0.9.0, February 14th, 2009
+== February 16th, 2009
+
+* Added ability to query a presenter instance if it accepts a particular symbol using #accepts?
+
+== 0.8.0, February 14th, 2009
 
 * Removed/deprecated :requiring option in favor of :accepts
 * CachingPresenter no longer tries to cache writer methods, ie; #foo=

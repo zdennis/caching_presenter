@@ -23,6 +23,10 @@ class CachingPresenter
     super || presents.respond_to?(*args)
   end
   
+  def accepts?(name)
+    @accepts.include?(name.to_sym)
+  end
+  
   def self.inherited(subclass)
     write_presents_for_subclass subclass
     subclass.extend Memoizable
@@ -61,6 +65,7 @@ class CachingPresenter
       constructor_options[:accepts] ||= []
       klass = self
       define_method(:initialize) do |args|
+        @accepts = constructor_options[:accepts].dup
         @presents_id = options[:presents]
         args = args.dup
         raise ArgumentError, "missing object to present on: #{@presents_id}" unless args[@presents_id]        
